@@ -313,7 +313,6 @@ a{
 
     case SVC_MGR_LIST_SERVICES: {
         uint32_t n = bio_get_uint32(msg);
-
         if (!svc_can_list(txn->sender_pid)) {
             ALOGE("list_service() uid=%d - PERMISSION DENIED\n",
                     txn->sender_euid);

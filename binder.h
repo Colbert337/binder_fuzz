@@ -27,6 +27,11 @@ struct binder_death {
     void *ptr;
 };
 
+#define MAX_SERVICES 400
+static uint16_t *services[400];
+static uint32_t handles[400];
+static uint32_t num_handles_set;
+
 /* the one magic handle */
 #define BINDER_SERVICE_MANAGER  0U
 

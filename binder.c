@@ -633,3 +633,65 @@ uint32_t bio_get_ref(struct binder_io *bio)
 
     return 0;
 }
+
+
+static uint32_t get_handle_from_svcmgr(const uint16_t *str, binder_state *bs){
+        struct binder_io msg;
+        struct binder_io reply;
+        unsigned rdata[256];
+        int res;
+        uint32_t ref;
+
+        bio_init(&msg, rdata, sizeof(rdata), 0);
+        bio_put_string16(&msg, svcmgr_id);
+        bio_put_string16(&msg, str);
+
+        res = binder_call(bs, &msg, &reply, 0,
+                          BINDER_SERVICE_MANAGER, SVC_MGR_GET_SERVICE);
+
+        if (res == -1)
+                return res;
+
+        ref = bio_get_ref(&reply);
+        if (ref == 0)
+                return -1;
+
+        return ref;
+}
+
+void get_all_handles(struct binder_state *bs) {
+        struct binder_io msg;
+        struct binder_io reply;
+        unsigned rdata[256];
+        uint16_t *str;
+        int res;
+        size_t sz;
+        unsigned service_count = 0;
+        uint32_t handle;
+        do {
+                bio_init(&msg, rdata, sizeof(rdata), 0);
+                bio_put_string16(&msg, svcmgr_id);
+                /* put the cmd */
+                bio_put_uint32(&msg, service_count);
+                res = binder_call(bs, &msg, &reply,
+                                  BINDER_SERVICE_MANAGER, SVC_MGR_LIST_SERVICES);
+                if (res) {
+                        str = bio_get_string16(&reply, &sz);
+                        si = malloc((sz + 1) * sizeof(uint16_t));
+                        if (!si) {
+                                fprintf(stderr, "malloc failed\n");
+                                res = -1;
+                                break;
+                        }
+                        si[sz] = '/0';
+                        services[service_count] = si;
+                        handle = get_handle_from_svcmgr(str, sz);
+                        if (handle == -1) {
+                                free(si);
+                                break;
+                        }
+                        handles[service_count] = handle;
+                        service_count++;
+                }
+        } while(res != -1);
+}
