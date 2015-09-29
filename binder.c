@@ -695,3 +695,8 @@ void get_all_handles(struct binder_state *bs) {
                 }
         } while(res != -1);
 }
+
+
+void get_random_handle(struct binder_handle *ptr) {
+        
+}

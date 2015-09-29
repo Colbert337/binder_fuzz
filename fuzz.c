@@ -2,6 +2,8 @@
 #include <inttypes.h>
 #include <linux/binder.h>
 
+static const uint16_t NO_HANDLE[] = {'n','o','h','a','\0'};
+
 typedef binder_driver_command_protocol binder_command_type
 
 /* Hand crafted organic artisan integers created after years of R&D
@@ -36,11 +38,23 @@ static void byte_shift(void *buffer, unsigned int length) {
 
 }
 
-static uint32_t get_handle(void) {
+static uint32_t get_handle(struct binder_handle *ptr) {
         /* TODO have binder before fuzzing ask for lots of handles, randomly
          * pull handles from that pool to use here.
          */
 
+        if (rand() % 2) {
+                get_random_handle(ptr);
+                return ptr->handle;
+        }
+
+        ptr->handle = (uint32_t) rand();
+        ptr->str = NO_HANDLE;
+        return ptr->handle;
+}
+
+static uint32_t get_cookie(void) {
+        /* TODO pick from our hand crafted ints */
         return (uint32_t) rand();
 }
 
@@ -51,8 +65,9 @@ static void *gen_transaction(void) {
                 fprintf(stderr, "couldn't generate trans, malloc failed\n");
                 return NULL;
         }
-        data->target.ptr = get_handle();
-        data->cookie = get_cookie(data->target.ptr);
+        struct binder_handle temp;
+        data->target.ptr = get_handle(&temp);
+        data->cookie = get_cookie();
         data->code = get_transaction_flags();
         /* maybe a havoc int? */
         data->data_size = get_transaction_data_size();
