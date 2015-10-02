@@ -19,6 +19,14 @@
 #define LOG_TAG "Binder"
 #include <cutils/log.h>
 
+const int verbose = 0;
+
+#define MAX_SERVICES 400
+static uint16_t *services[400];
+static uint32_t handles[400];
+static uint32_t num_handles_set;
+
+
 void bio_init_from_txn(struct binder_io *io, struct binder_transaction_data *txn);
 
 #if TRACE
@@ -693,10 +701,15 @@ void get_all_handles(struct binder_state *bs) {
                         handles[service_count] = handle;
                         service_count++;
                 }
-        } while(res != -1);
+        } while(res != -1 && service_count < MAX_SERVICES);
+        num_handles_set = service_count;
 }
 
 
 void get_random_handle(struct binder_handle *ptr) {
-        
+        int r = rand() % num_handles_set;
+        ptr->str = services[r];
+        ptr->handle = handles[r];
+        printf_v("get_random_handle selected %s, and handle %u\n",
+                 ptr->str, ptr->handle);
 }

@@ -32,10 +32,6 @@ struct binder_handle {
         uint16_t *str;
 }
 
-#define MAX_SERVICES 400
-static uint16_t *services[400];
-static uint32_t handles[400];
-static uint32_t num_handles_set;
 
 /* the one magic handle */
 #define BINDER_SERVICE_MANAGER  0U
@@ -50,6 +46,14 @@ enum {
     SVC_MGR_ADD_SERVICE,
     SVC_MGR_LIST_SERVICES,
 };
+
+enum transaction_flags {
+         TF_ONE_WAY      = 0x01,
+         TF_ROOT_OBJECT  = 0x04,
+         TF_STATUS_CODE  = 0x08,
+         TF_ACCEPT_FDS   = 0x10,
+};
+
 
 typedef int (*binder_handler)(struct binder_state *bs,
                               struct binder_transaction_data *txn,

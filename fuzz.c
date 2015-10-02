@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <linux/binder.h>
 
-static const uint16_t NO_HANDLE[] = {'n','o','h','a','\0'};
+static const uint16_t NO_HANDLE[] = {'n','o','h','a','n','d','l','e','\0'};
 
 typedef binder_driver_command_protocol binder_command_type
 
@@ -12,16 +12,12 @@ typedef binder_driver_command_protocol binder_command_type
 
 static int havoc_ints[] =
 {
-        0x0, 0x1, 0x2, 0x3, 0x80000000, 0x80000001, 0xFFFFFFFF,
+        0x00000000, 0x00000001, 0x00000002,
+        0x0000003, //add more ints on this line, its killing my ocd just having one
+        0x80000000, 0x80000001, 0xFFFFFFFF,
         0xFFFFFFFE, 0x7FFFFFFF, 0x7FFFFFFE
 };
 
-enum transaction_flags {
-         TF_ONE_WAY      = 0x01,
-         TF_ROOT_OBJECT  = 0x04,
-         TF_STATUS_CODE  = 0x08,
-         TF_ACCEPT_FDS   = 0x10,
-};
 
 /* Length in bytes */
 static void bit_flip(void *buffer, unsigned int length) {
@@ -39,10 +35,6 @@ static void byte_shift(void *buffer, unsigned int length) {
 }
 
 static uint32_t get_handle(struct binder_handle *ptr) {
-        /* TODO have binder before fuzzing ask for lots of handles, randomly
-         * pull handles from that pool to use here.
-         */
-
         if (rand() % 2) {
                 get_random_handle(ptr);
                 return ptr->handle;
@@ -57,6 +49,28 @@ static uint32_t get_cookie(void) {
         /* TODO pick from our hand crafted ints */
         return (uint32_t) rand();
 }
+
+static int get_transaction_flags(void) {
+        static int flag_perms[] = {
+                TF_ONE_WAY,
+                TF_ONE_WAY | TF_ROOT_OBJECT,
+                TF_ONE_WAY | TF_ROOT_OBJECT | TF_STATUS_CODE,
+                TF_ONE_WAY | TF_ROOT_OBJECT | TF_STATUS_CODE | TF_ACCEPT_FDS,
+                TF_ONE_WAY | TF_ROOT_OBJECT | TF_ACCEPT_FDS,
+                TF_ONE_WAY | TF_STATUS_CODE,
+                TF_ONE_WAY | TF_STATUS_CODE | TF_ACCEPT_FDS,
+                TF_ONE_WAY | TF_ACCEPT_FDS,
+                TF_ROOT_OBJECT,
+                TF_ROOT_OBJECT | TF_STATUS_CODE,
+                TF_ROOT_OBJECT | TF_STATUS_CODE | TF_ACCEPT_FDS,
+                TF_ROOT_OBJECT | TF_ACCEPT_FDS,
+                TF_STATUS_CODE,
+                TF_STATUS_CODE | TF_ACCEPT_FDS,
+                TF_ACCEPT_FDS
+        };
+        return flag_perms[rand % 16];
+}
+
 
 static void *gen_transaction(void) {
         struct binder_transaction_data *data;
